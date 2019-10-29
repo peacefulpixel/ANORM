@@ -3,6 +3,8 @@ package com.cplusjuice.anorm.query;
 import com.cplusjuice.anorm.ANORM;
 import com.cplusjuice.anorm.bean.Presents;
 import com.cplusjuice.anorm.exception.InvalidBeanException;
+import com.cplusjuice.anorm.exception.InvalidSqlTableException;
+import com.cplusjuice.anorm.exception.JDBCStatementException;
 import com.cplusjuice.anorm.exception.QueryExecutingException;
 import com.cplusjuice.anorm.util.CaseFormat;
 import com.cplusjuice.anorm.util.CaseFormatter;
@@ -36,15 +38,13 @@ public class Query<T> {
         try {
             statement = ANORM.getConnection().createStatement();
         } catch (SQLException e) {
-            e.printStackTrace();
-            // TODO: remove printStackTrace call
+            throw JDBCStatementException.cantCreate();
         }
     }
 
     private Statement getStatement() {
         if (statement == null) {
-            // TODO: Replace exception class
-            throw new NullPointerException("Can't get Statement instance from SQL Connection");
+            throw JDBCStatementException.uninitialized();
         }
 
         return statement;
@@ -55,17 +55,15 @@ public class Query<T> {
         try {
             constructor = tClass.getConstructor();
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-            return null;
-            // TODO: remove printStackTrace call and return statement
+            throw InvalidBeanException.haveNotConstructor(tClass.getName());
         }
 
         try {
             return constructor.newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            return null;
-            // TODO: remove printStackTrace call and return statement
+        } catch (InstantiationException | InvocationTargetException e) {
+            throw InvalidBeanException.unableToGetInstance(tClass.getName());
+        } catch (IllegalAccessException e) {
+            throw InvalidBeanException.constructorIsNotPublic(tClass.getName());
         }
     }
 
@@ -81,9 +79,7 @@ public class Query<T> {
         try {
             return tClass.getMethod(methodName, type);
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-            return null;
-            // TODO: remove printStackTrace call and return statement
+            throw InvalidBeanException.unableToFindSetter(methodName);
         }
     }
 
@@ -113,8 +109,7 @@ public class Query<T> {
             javaType = String.class;
             value = set.getString(columnName);
         } else {
-            throw new RuntimeException("Unknown column type: " + sqlType);
-            // TODO: Replace with other exception
+            throw InvalidSqlTableException.invalidColumnType(sqlType);
         }
 
         Method setter = getSetter(columnName, javaType);
@@ -123,8 +118,7 @@ public class Query<T> {
                 setter.invoke(bean, value);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            // TODO: remove printStackTrace call
+            throw InvalidBeanException.unableToInvoke(setter.getName());
         }
     }
 
@@ -153,9 +147,7 @@ public class Query<T> {
                 result.add(i);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return result;
-            // TODO: remove printStackTrace call and return statement
+            throw InvalidSqlTableException.somethingHappened();
         }
 
         return result;
