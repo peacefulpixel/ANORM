@@ -11,6 +11,10 @@ public class QueryExecutingException extends RuntimeException {
         return new QueryExecutingException("Query returns zero rows");
     }
 
+    public static QueryExecutingException errorWhileExecuting() {
+        return new QueryExecutingException("An error has occurred while executing a query");
+    }
+
     private QueryExecutingException(String message) {
         super(message);
     }

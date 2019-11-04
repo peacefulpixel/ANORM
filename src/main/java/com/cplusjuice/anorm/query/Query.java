@@ -2,12 +2,10 @@ package com.cplusjuice.anorm.query;
 
 import com.cplusjuice.anorm.ANORM;
 import com.cplusjuice.anorm.bean.Presents;
-import com.cplusjuice.anorm.exception.InvalidBeanException;
-import com.cplusjuice.anorm.exception.InvalidSqlTableException;
-import com.cplusjuice.anorm.exception.JDBCStatementException;
-import com.cplusjuice.anorm.exception.QueryExecutingException;
+import com.cplusjuice.anorm.exception.*;
 import com.cplusjuice.anorm.util.CaseFormat;
 import com.cplusjuice.anorm.util.CaseFormatter;
+import com.cplusjuice.anorm.util.JavaJDBCTypesConverter;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -83,34 +81,12 @@ public class Query<T> {
         }
     }
 
-    private void set(T bean, String columnName, int sqlType, ResultSet set) throws SQLException {
-        Class javaType;
-        Object value;
+    private void set(T bean, String columnName, int sqlType, ResultSet set)
+            throws JavaJDBCTypeConversionException {
 
-        if (sqlType == Types.BOOLEAN) {
-            javaType = Boolean.class;
-            value = set.getBoolean(columnName);
-        } else if (sqlType == Types.DATE) {
-            javaType = Date.class;
-            value = set.getDate(columnName);
-        } else if (sqlType == Types.DOUBLE) {
-            javaType = Double.class;
-            value = set.getDouble(columnName);
-        } else if (sqlType == Types.FLOAT) {
-            javaType = Float.class;
-            value = set.getFloat(columnName);
-        } else if (sqlType == Types.INTEGER) {
-            javaType = Integer.class;
-            value = set.getInt(columnName);
-        } else if (sqlType == Types.TIMESTAMP) {
-            javaType = Timestamp.class;
-            value = set.getTimestamp(columnName);
-        } else if (sqlType == Types.VARCHAR) {
-            javaType = String.class;
-            value = set.getString(columnName);
-        } else {
-            throw InvalidSqlTableException.invalidColumnType(sqlType);
-        }
+        JavaJDBCTypesConverter converter = new JavaJDBCTypesConverter(sqlType);
+        Class javaType = converter.asJavaType();
+        Object value = converter.invokeGetValue(set, columnName);
 
         Method setter = getSetter(columnName, javaType);
         try {
@@ -133,7 +109,7 @@ public class Query<T> {
         ResultSet resultSet;
         try {
             getStatement().execute(query);
-            resultSet = statement.getResultSet();
+            resultSet = getStatement().getResultSet();
 
             while (resultSet.next()) {
                 T i = getInstance();
@@ -146,8 +122,9 @@ public class Query<T> {
 
                 result.add(i);
             }
-        } catch (SQLException e) {
+        } catch (SQLException | JavaJDBCTypeConversionException e) {
             throw InvalidSqlTableException.somethingHappened();
+            // TODO: Catch JavaJDBCTypeConversionException
         }
 
         return result;
@@ -168,5 +145,73 @@ public class Query<T> {
         }
 
         return all.get(0);
+    }
+
+    public boolean isTableExists() {
+        final int JDBC_TABLE_NAME_COLUMN_INDEX = 3;
+
+        try {
+            DatabaseMetaData metaData = ANORM.getConnection().getMetaData();
+            ResultSet resultSet = metaData.getTables(null, null, "%", null);
+
+            while (resultSet.next()) {
+                String tableName = resultSet.getString(JDBC_TABLE_NAME_COLUMN_INDEX);
+
+                if (tableName.equals(this.tableName)) {
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // TODO: REMOVE
+        }
+
+        return false;
+    }
+
+    public boolean createTable() {
+        if (isTableExists()) {
+            return false;
+        }
+
+        StringBuilder builder = new StringBuilder("CREATE TABLE ");
+        builder.append(tableName).append(" ( ");
+
+        Method[] methods = tClass.getMethods();
+        for (Method method : methods) {
+
+            String name = method.getName();
+            int nameStart = name.startsWith("get") ? 3 : (name.startsWith("is") ? 2 : -1);
+            if (nameStart != -1 && !name.equals("getClass")) {
+                String nameInCamel = name.substring(nameStart);
+
+                CaseFormatter formatter = new CaseFormatter(nameInCamel);
+                String nameInSnake = formatter.convert(SNAKE_CASE);
+
+                Class returnType = method.getReturnType();
+                JavaJDBCTypesConverter converter;
+                try {
+                    converter = new JavaJDBCTypesConverter(returnType);
+                } catch (JavaJDBCTypeConversionException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+
+                builder.append(nameInSnake)
+                        .append(" ")
+                        .append(converter.getJDBCName())
+                        .append(", ");
+            }
+        }
+
+        int length = builder.length();
+        builder.delete(length - 2, length).append(" )");
+
+        try {
+            getStatement().execute(builder.toString());
+        } catch (SQLException e) {
+            throw QueryExecutingException.errorWhileExecuting();
+        }
+
+        return true;
     }
 }
