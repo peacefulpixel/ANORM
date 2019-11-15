@@ -14,14 +14,14 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.cplusjuice.anorm.ANORM.getConnection;
 import static com.cplusjuice.anorm.query.Expression.alwaysTrue;
 import static com.cplusjuice.anorm.util.CaseFormat.CAMEL_CASE;
 import static com.cplusjuice.anorm.util.CaseFormat.SNAKE_CASE;
 
 public class Query<T> {
-    Class<T> tClass;
-    String tableName;
-    private Statement statement;
+    private Class<T> tClass;
+    private String tableName;
 
     public Query(Class<T> tClass) {
         this.tClass = tClass;
@@ -32,20 +32,6 @@ public class Query<T> {
 
         Presents presents = tClass.getAnnotation(Presents.class);
         tableName = presents.value();
-
-        try {
-            statement = ANORM.getConnection().createStatement();
-        } catch (SQLException e) {
-            throw JDBCStatementException.cantCreate();
-        }
-    }
-
-    private Statement getStatement() {
-        if (statement == null) {
-            throw JDBCStatementException.uninitialized();
-        }
-
-        return statement;
     }
 
     private T getInstance() {
@@ -107,9 +93,11 @@ public class Query<T> {
         String query = "SELECT * FROM " + tableName + " WHERE " + expression.toString();
 
         ResultSet resultSet;
-        try {
-            getStatement().execute(query);
-            resultSet = getStatement().getResultSet();
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+
+            statement.execute(query);
+            resultSet = statement.getResultSet();
 
             while (resultSet.next()) {
                 T i = getInstance();
@@ -151,7 +139,7 @@ public class Query<T> {
         final int JDBC_TABLE_NAME_COLUMN_INDEX = 3;
 
         try {
-            DatabaseMetaData metaData = ANORM.getConnection().getMetaData();
+            DatabaseMetaData metaData = getConnection().getMetaData();
             ResultSet resultSet = metaData.getTables(null, null, "%", null);
 
             while (resultSet.next()) {
@@ -206,8 +194,10 @@ public class Query<T> {
         int length = builder.length();
         builder.delete(length - 2, length).append(" )");
 
-        try {
-            getStatement().execute(builder.toString());
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+
+            statement.execute(builder.toString());
         } catch (SQLException e) {
             throw QueryExecutingException.errorWhileExecuting();
         }

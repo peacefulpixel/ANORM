@@ -1,7 +1,7 @@
 package com.cplusjuice.anorm;
 
 import com.cplusjuice.anorm.exception.FailedToConnectException;
-import com.cplusjuice.anorm.exception.NotInitializedConnectionException;
+import com.cplusjuice.anorm.exception.ConnectionException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,14 +9,18 @@ import java.sql.SQLException;
 
 public class ANORM {
 
-    private static Connection connection;
+    private static ConnectionFactory connectionFactory;
 
-    public static Connection getConnection() {
-        if (connection == null) {
-            throw NotInitializedConnectionException.notInitialized();
+    public static Connection getConnection() throws ConnectionException {
+        if (connectionFactory == null) {
+            throw ConnectionException.notInitialized();
         }
 
-        return connection;
+        try {
+            return connectionFactory.getConnection();
+        } catch (SQLException e) {
+            throw ConnectionException.probablyLost();
+        }
     }
 
     public ANORM(Configuration configuration) throws FailedToConnectException {
@@ -33,14 +37,10 @@ public class ANORM {
             throw FailedToConnectException.classNotFound(driverClass);
         }
 
-        try {
-            if (login == null) {
-                connection = DriverManager.getConnection(dbAddress);
-            } else {
-                connection = DriverManager.getConnection(dbAddress, login, password);
-            }
-        } catch (SQLException e) {
-            throw FailedToConnectException.cantConnect(dbAddress);
+        if (login == null) {
+            connectionFactory = () -> DriverManager.getConnection(dbAddress);
+        } else {
+            connectionFactory = () -> DriverManager.getConnection(dbAddress, login, password);
         }
     }
 }
