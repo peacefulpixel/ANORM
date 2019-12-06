@@ -29,8 +29,9 @@ public class CaseFormatter {
 
         if ((mixedRegisters || allInLowerRegister) && !hasUnderscore) {
             format = CAMEL_CASE;
-        } else if (allInUpperRegister) {
+        } else if (allInUpperRegister || allInLowerRegister) {
             format = SNAKE_CASE;
+            this.input = input.toUpperCase();
         } else {
             throw new RuntimeException("Can't determine the text format in " + input);
         }
@@ -38,6 +39,10 @@ public class CaseFormatter {
 
     @Nullable
     public String convert(@NotNull CaseFormat format) {
+        if (format.equals(this.format)) {
+            return input;
+        }
+
         if (format.equals(CAMEL_CASE)) {
             return fromSnakeToCamel();
         }
