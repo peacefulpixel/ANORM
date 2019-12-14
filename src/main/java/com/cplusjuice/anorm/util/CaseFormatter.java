@@ -14,8 +14,8 @@ public class CaseFormatter {
     private CaseFormat format;
 
     public CaseFormatter(@NotNull String input) {
-        if (input.length() < 1) {
-            throw new RuntimeException("Can't format an empty line");
+        if (input.isEmpty()) {
+            throw new IllegalArgumentException("Can't format an empty line");
         }
 
         this.input = input;
@@ -33,7 +33,7 @@ public class CaseFormatter {
             format = SNAKE_CASE;
             this.input = input.toUpperCase();
         } else {
-            throw new RuntimeException("Can't determine the text format in " + input);
+            throw new IllegalArgumentException("Can't determine the text format in " + input);
         }
     }
 
