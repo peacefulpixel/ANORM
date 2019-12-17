@@ -20,7 +20,7 @@ public class CaseFormatterTest {
     public void testCaseException1() {
         try {
             new CaseFormatter(null);
-            fail("Excepted IllegalArgumentException:" +
+            fail("Expected IllegalArgumentException:" +
                     " Argument for @NotNull parameter 'input' of CaseFormatter must not be null");
         } catch (IllegalArgumentException ex) {
             assertNotNull(ex.getMessage());
@@ -31,7 +31,7 @@ public class CaseFormatterTest {
     public void testCaseException2() {
         try {
             new CaseFormatter("");
-            fail("Excepted IllegalArgumentException: Can't format an empty line");
+            fail("Expected IllegalArgumentException: Can't format an empty line");
         } catch (IllegalArgumentException ex) {
             assertNotNull(ex.getMessage());
         }
@@ -41,7 +41,7 @@ public class CaseFormatterTest {
     public void testCaseException3() {
         try {
             new CaseFormatter("tEST_FORMAT");
-            fail("Excepted IllegalArgumentException: Can't determine the text format");
+            fail("Expected IllegalArgumentException: Can't determine the text format");
         } catch (IllegalArgumentException ex) {
             assertNotNull(ex.getMessage());
         }
