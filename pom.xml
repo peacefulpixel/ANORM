@@ -8,6 +8,10 @@
     <artifactId>anorm</artifactId>
     <version>0.1-dev</version>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jetbrains</groupId>
