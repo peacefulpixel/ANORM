@@ -22,8 +22,8 @@ public class CaseFormatterTest {
             new CaseFormatter(null);
             fail("Expected IllegalArgumentException:" +
                     " Argument for @NotNull parameter 'input' of CaseFormatter must not be null");
-        } catch (IllegalArgumentException ex) {
-            assertNotNull(ex.getMessage());
+        } catch (NullPointerException ex) {
+            assertEquals(ex.toString(), "java.lang.NullPointerException");
         }
     }
 
