@@ -1,18 +1,15 @@
 package com.cplusjuice.anorm;
 
-import org.jetbrains.annotations.Nullable;
+public interface Configuration {
+    SqlDriver getDriver();
+    void setDriver(SqlDriver value);
 
-public abstract class Configuration {
-    public abstract SqlDriver getDriver();
-    public abstract String getLocation();
+    String getLocation();
+    void setLocation(String value);
 
-    @Nullable
-    public String getLogin() {
-        return null;
-    }
+    String getLogin();
+    void setLogin(String value);
 
-    @Nullable
-    public String getPassword() {
-        return null;
-    }
+    String getPassword();
+    void setPassword(String value);
 }

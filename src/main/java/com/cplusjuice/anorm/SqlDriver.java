@@ -1,7 +1,8 @@
 package com.cplusjuice.anorm;
 
 public enum SqlDriver {
-    SQLITE("org.sqlite.JDBC", "jdbc:sqlite:");
+    SQLITE("org.sqlite.JDBC", "jdbc:sqlite:"),
+    PG_SQL("org.postgresql.Driver", "jdbc:postgresql:");
 
     private String driverClass;
     private String driverPrefix;

@@ -1,9 +1,10 @@
 package com.cplusjuice.anorm.query;
 
-import com.cplusjuice.anorm.ANORM;
 import com.cplusjuice.anorm.bean.Presents;
-import com.cplusjuice.anorm.exception.*;
-import com.cplusjuice.anorm.util.CaseFormat;
+import com.cplusjuice.anorm.exception.InvalidBeanException;
+import com.cplusjuice.anorm.exception.InvalidSqlTableException;
+import com.cplusjuice.anorm.exception.JavaJDBCTypeConversionException;
+import com.cplusjuice.anorm.exception.QueryExecutingException;
 import com.cplusjuice.anorm.util.CaseFormatter;
 import com.cplusjuice.anorm.util.JavaJDBCTypesConverter;
 
